@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/game.gd" id="1_game"]
+
+[node name="Game" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_game")
+
+[node name="Header" type="Label" parent="."]
+layout_mode = 1
+offset_left = 200.0
+offset_top = 30.0
+offset_right = 790.0
+offset_bottom = 60.0
+text = "Move with arrows / WASD (try send_action), or drive via ui_click."
+
+[node name="Player" type="ColorRect" parent="."]
+layout_mode = 1
+offset_left = 380.0
+offset_top = 280.0
+offset_right = 420.0
+offset_bottom = 320.0
+mouse_filter = 0
+color = Color(0.169, 0.424, 0.69, 1)
+
+[node name="CollectButton" type="Button" parent="."]
+layout_mode = 1
+offset_left = 320.0
+offset_top = 500.0
+offset_right = 480.0
+offset_bottom = 545.0
+text = "Collect Item"
+
+[node name="CountLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 500.0
+offset_top = 505.0
+offset_right = 650.0
+offset_bottom = 540.0
+text = "Items: 0"
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 170.0
+offset_bottom = 60.0
+text = "Back to Menu"

@@ -1,0 +1,5 @@
+# Godot editor cache
+.godot/
+
+# Export output (built per machine, never committed)
+build/

@@ -1,0 +1,9 @@
+# Internal docs never go to the public repository
+CLAUDE.md
+
+# Godot editor artifacts
+.godot/
+*.translation
+
+# SVN bookkeeping (in case this repo is prepared from an SVN working copy)
+.svn/

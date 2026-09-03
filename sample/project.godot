@@ -1,0 +1,25 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="OmniDebugLink Godot Sample"
+config/description="Demo project for the OmniDebugLink Godot client SDK."
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.2")
+config/icon="res://icon.svg"
+
+[autoload]
+
+OmniDebugLink="*res://addons/omni_debug_link/runtime/omnidebug_link.gd"
+OdlSample="*res://autoload/token_loader.gd"
+
+[display]
+
+window/size/viewport_width=800
+window/size/viewport_height=600
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
