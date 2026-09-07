@@ -14,7 +14,7 @@ A tiny two-scene game (main menu → item-collecting screen) demonstrating the [
      - Linux/macOS: `~/.local/share/godot/app_userdata/OmniDebugLink Godot Sample/odl_token.txt` (`~/Library/Application Support/Godot/app_userdata/...` on macOS)
 3. Press F5. The bottom label should read `OmniDebugLink: connected`.
 
-One token pair = one device seat. Do not share a token between two running instances (the newer connection replaces the older one, and the SDK stops reconnecting with close code 4000 by design).
+One token pair = one device seat. Do not share a token between two running instances (the newer connection replaces the older one, and the SDK stops reconnecting and quits the game with close code 4000 by design).
 
 ## What an AI tool can do with it
 
@@ -41,6 +41,10 @@ The bundled `export_presets.cfg` defines a Windows Desktop preset (with an embed
 godot --headless --path sample --export-release "Windows Desktop"
 godot --headless --path sample --export-release "Web"
 ```
+
+Run the **web build on Windows with a double-click**: export once, then double-click `StartWeb.bat` in the sample root — it starts a tiny bundled PowerShell static server (no install needed; browsers refuse to load a wasm page from `file://`, which is why a server is required; it also sends the COOP/COEP headers Godot 4.2 web builds need for SharedArrayBuffer/cross-origin isolation) and opens the sample in your default browser. Put your client token into `web_token.txt` (one line, `odl-dev-…`) next to the bat and it is passed automatically as `?token=`; in web builds the token parameter is persisted to the browser's storage, so later runs connect without it.
+
+Web-build note: keep the browser tab in the **foreground** while debugging — background tabs fully pause the engine loop (`_process` stops), which suspends task processing and the connection until the tab is visible again. And with no stretch mode configured, canvas coordinates equal window pixels: use `find_objects`'s `center_norm` for tap/swipe targets instead of calculating from the design resolution.
 
 Outputs land in `build/windows/` and `build/web/`. Cross-exporting works everywhere: a Linux machine happily produces the Windows build — the export templates ship a prebuilt Windows runtime, no cross toolchain involved. (`build/` contains a `.gdignore` file so the editor does not try to import the exported PNGs as project resources — recreate it if you delete the folder.)
 

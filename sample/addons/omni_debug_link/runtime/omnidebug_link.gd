@@ -14,7 +14,7 @@ extends Node
 
 signal state_changed(connected: bool)
 
-const LIB_VERSION := "0.1.0"
+const LIB_VERSION := "0.1.1"
 const DEFAULT_WS_URL := "wss://api.omnidebuglink.dev/ws"
 
 const ConnectionScript := preload("./connection.gd")
@@ -44,6 +44,10 @@ var _task_modules: Array = []
 
 
 func _ready() -> void:
+	# Keep pumping while the game is paused (pause menus are common): a frozen
+	# _process would stall the WebSocket poll too, deferring the close-4000
+	# detection and the fail-loud exit indefinitely (pitfall 14's intent).
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	tasks = TaskRegistryScript.new()
 	logs = LogBufferScript.new()
 	tasks.on_changed = Callable(self, "_request_hello_resend")
@@ -68,7 +72,8 @@ func start(client_token: String, url := "") -> void:
 		Callable(self, "_build_hello"),
 		Callable(self, "_on_task"),
 		Callable(self, "_on_state"),
-		Callable(self, "_on_log")
+		Callable(self, "_on_log"),
+		Callable(self, "_on_replaced")
 	)
 	_conn.start()
 	set_process(true)
@@ -216,6 +221,26 @@ func _on_state(connected: bool) -> void:
 
 func _on_log(message: String, level: String) -> void:
 	logs.add_sdk(level, message)
+
+
+## Close code 4000 arrived: this token was claimed by a newer connection.
+## Fail loud — quit the process so a token that was accidentally shipped
+## inside a release build cannot keep the debug channel alive silently.
+## The web export cannot close its own tab, so the equivalent loud signal
+## is a modal browser alert. (Engine.get_singleton instead of the bare
+## JavaScriptBridge identifier: the class does not exist in ClassDB on
+## non-web builds and would break script parsing there.)
+func _on_replaced() -> void:
+	if OS.has_feature("web"):
+		var text := "OmniDebugLink: connection replaced (close code 4000)\\n\\nAnother client just connected with the same device token.\\nEach device must use its own token pair.\\n\\nIf you are seeing this on a production site, the OmniDebugLink SDK was accidentally left enabled - remove the OmniDebugLink.start() call from your release build."
+		var js: Object = Engine.get_singleton("JavaScriptBridge")
+		# Browsers can suppress alert() (sandboxed iframe without allow-modals,
+		# or "prevent this page from creating additional dialogs") — leave a
+		# trace in the JS console too so the alert is not the only loud signal.
+		js.eval("console.error('OmniDebugLink: connection replaced (close code 4000) - another client just connected with the same device token; the debug channel is stopped.')")
+		js.eval("alert('%s')" % text)
+	else:
+		get_tree().quit()
 
 
 func _set_connected(value: bool) -> void:

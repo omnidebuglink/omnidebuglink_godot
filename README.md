@@ -115,9 +115,21 @@ Handlers run on the main thread, may `await` (frames, timers), and return any JS
 
 ## Notes
 
-- Token discipline: one token pair per device. If the SDK reports `close 4000`, the token was claimed by another connection and it stops reconnecting by design.
+- Token discipline: one token pair per device. If the SDK reports `close 4000`, the token was claimed by another connection, it stops reconnecting and **quits the game** by design (web exports, which cannot close their own tab, show a modal alert instead).
 - The whole client is main-threaded. Do not call `start()`/task handlers from threads; if you need cross-thread logging, push messages through `call_deferred`.
 - C# (Godot .NET) projects can drive the GDScript autoload via `GetNode("/root/OmniDebugLink").Call("start", token)`.
+
+> ### ⚠️ Do not call `OmniDebugLink.start()` in release builds
+>
+> `start()` opens a debug channel that can inspect and drive your game, and
+> its device token is embedded in the build. Keep it out of production: gate
+> the call behind an `OS.is_debug_build()` check or an environment variable,
+> or remove it before exporting your release.
+>
+> Every connection with the same token kicks the previous one offline, and
+> being kicked terminates the game by design (see above). If `start()` ships
+> in a release build, your players' sessions will be terminated and any loss
+> that results is on you, not on OmniDebugLink.
 
 ## License
 

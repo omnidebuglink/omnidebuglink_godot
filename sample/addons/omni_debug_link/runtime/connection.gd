@@ -18,6 +18,7 @@ var _build_hello: Callable
 var _on_task: Callable
 var _on_state: Callable
 var _on_log: Callable
+var _on_replaced: Callable
 
 var _ws: WebSocketPeer = null
 var _stopped := true
@@ -31,12 +32,13 @@ var _connecting_since_ms := 0
 var _connected := false
 
 
-func _init(url: String, build_hello: Callable, on_task: Callable, on_state: Callable, on_log: Callable) -> void:
+func _init(url: String, build_hello: Callable, on_task: Callable, on_state: Callable, on_log: Callable, on_replaced: Callable) -> void:
 	_url = url
 	_build_hello = build_hello
 	_on_task = on_task
 	_on_state = on_state
 	_on_log = on_log
+	_on_replaced = on_replaced
 
 
 func start() -> void:
@@ -103,9 +105,13 @@ func poll(delta_ms: float) -> void:
 		_set_connected(false)
 		if code == 4000:
 			# Same token taken over by a newer connection. Reconnecting would
-			# ping-pong with the server's kick mechanism forever.
+			# ping-pong with the server's kick mechanism forever — and a live
+			# token inside a release build means the SDK shipped by mistake,
+			# so the host fails loud (quit / web alert) instead of staying silent.
 			_replaced = true
-			_log("TOKEN REPLACED (close 4000): this token was claimed by another connection. Stopping reconnects. Use one token pair per device.", "error")
+			_log("TOKEN REPLACED (close 4000): this token was claimed by another connection. Stopping reconnects and quitting. Use one token pair per device; never ship start() in release builds.", "error")
+			if _on_replaced.is_valid():
+				_on_replaced.call()
 			return
 		_log("connection closed (code %d), reconnecting" % code, "warning")
 		_schedule_retry()
