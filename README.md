@@ -119,12 +119,14 @@ Handlers run on the main thread, may `await` (frames, timers), and return any JS
 - The whole client is main-threaded. Do not call `start()`/task handlers from threads; if you need cross-thread logging, push messages through `call_deferred`.
 - C# (Godot .NET) projects can drive the GDScript autoload via `GetNode("/root/OmniDebugLink").Call("start", token)`.
 
-> ### ⚠️ Do not call `OmniDebugLink.start()` in release builds
+> ### ⚠️ Never call `start()` unconditionally — and never embed a token in a release build
 >
-> `start()` opens a debug channel that can inspect and drive your game, and
-> its device token is embedded in the build. Keep it out of production: gate
-> the call behind an `OS.is_debug_build()` check or an environment variable,
-> or remove it before exporting your release.
+> `start()` opens a debug channel that can inspect and drive your game.
+> **Debug builds**: start freely — gate the call behind an `OS.is_debug_build()`
+> check or an environment variable.
+> **Release builds**: only behind a runtime condition — a token issued by your
+> own backend to an authorized account, never one baked into the binary
+> ([production pattern](https://github.com/omnidebuglink/omnidebuglink/blob/main/sdk-integration.md#production--conditional-debugging))
 >
 > Every connection with the same token kicks the previous one offline, and
 > being kicked terminates the game by design (see above). If `start()` ships
