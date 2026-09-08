@@ -14,7 +14,7 @@ extends Node
 
 signal state_changed(connected: bool)
 
-const LIB_VERSION := "0.1.1"
+const LIB_VERSION := "0.1.2"
 const DEFAULT_WS_URL := "wss://api.omnidebuglink.dev/ws"
 
 const ConnectionScript := preload("./connection.gd")
@@ -22,6 +22,12 @@ const TaskRegistryScript := preload("./task_registry.gd")
 const LogBufferScript := preload("./log_buffer.gd")
 const JsonUtil := preload("./json_util.gd")
 const BuiltinTasks := preload("./tasks/register_builtins.gd")
+
+## Per-process random id, generated once and never regenerated: the same value
+## survives reconnects and stop()/start() cycles. Appended to the /ws URL as
+## `instance=<id>` so the relay can tell this process's own reconnects apart
+## from another session claiming the token.
+static var _instance_id := ""
 
 ## Master switch for every task that mutates game state. When false, write
 ## tasks fail with ACTION_DISABLED and the flag is reported in hello.
@@ -41,6 +47,13 @@ var _start_ticks_ms := 0
 ## Builtin task module instances — Callables do not keep RefCounted receivers
 ## alive in 4.2, so the autoload owns the lifeline.
 var _task_modules: Array = []
+
+
+## The client instance id for this process (crypto-random 16 bytes, hex).
+static func instance_id() -> String:
+	if _instance_id == "":
+		_instance_id = Crypto.new().generate_random_bytes(16).hex_encode()
+	return _instance_id
 
 
 func _ready() -> void:
@@ -63,7 +76,10 @@ func _exit_tree() -> void:
 ## equals one device seat — never share a token between two running instances.
 ## url overrides the relay endpoint (defaults to the OmniDebugLink cloud).
 func start(client_token: String, url := "") -> void:
-	var full_url := url if url != "" else "%s?token=%s" % [DEFAULT_WS_URL, client_token.uri_encode()]
+	var base := url if url != "" else "%s?token=%s" % [DEFAULT_WS_URL, client_token.uri_encode()]
+	# Same id on every connect of this process (see instance_id()); hex needs
+	# no URL escaping. "?" in case a custom relay url ships without a query.
+	var full_url := "%s%sinstance=%s" % [base, "&" if "?" in base else "?", instance_id()]
 	_start_ticks_ms = Time.get_ticks_msec()
 	if _conn != null:
 		_conn.stop()
